@@ -1,24 +1,27 @@
 ﻿using UnityEngine;
 using agora_gaming_rtc;
 using UnityEngine.Android;
+using Vuforia;
 
 public class AgoraManager : MonoBehaviour
 {
-    
-    private IRtcEngine engine;
+    public static AgoraManager main;
+    public IRtcEngine engine;
+    public SO_AppAccess access;
 
-    [SerializeField] private SO_AppAccess access;
     [SerializeField] private GameObject localView;
     [SerializeField] private GameObject remoteView;
 
-    private void Start()
+    public void Start()
     {
+        main = this;
         engine = IRtcEngine.GetEngine(access.ID);
         
         // Initialise Callback
         engine.OnUserJoined = OnUserJoined;
         engine.OnUserOffline = OnUserOffline;
         RequestUserPermission();
+        VuforiaBehaviour.Instance.enabled = false;
     }
 
     #region User Permission
@@ -91,35 +94,41 @@ public class AgoraManager : MonoBehaviour
     }
     #endregion
 
-    private bool isMute = false;
+    #region Mic&Cam
+    private bool micEnabled = true;
     public void ToggleMicrophone()
     {
-        if (isMute)
+        if (micEnabled)
         {
-            engine.MuteLocalAudioStream(false);
-            isMute = false;
+            // If its unmuted, set to mute
+            engine.MuteLocalAudioStream(true);
+            micEnabled = false;
         }
         else
         {
-            engine.MuteLocalAudioStream(true);
-            isMute = true;
+            // If its muted, set to unmute
+            engine.MuteLocalAudioStream(false);
+            micEnabled = true;           
         }
     }
 
-    private bool isCam = false;
+    private bool camEnabled = true;
     public void ToggleCam()
     {
-        if (isCam)
+        if (camEnabled)
         {
-            engine.MuteLocalVideoStream(false);
-            isCam = false;
+            engine.MuteLocalVideoStream(true);
+            SetLocalCamera(false);
+            camEnabled = false;
         }
         else
         {
-            engine.MuteLocalVideoStream(true);
-            isCam = true;
+            engine.MuteLocalVideoStream(false);
+            SetLocalCamera(true);          
+            camEnabled = true;          
         }
     }
+    #endregion
 
     #region Callbacks
     private void OnUserOffline(uint uid, USER_OFFLINE_REASON reason)
